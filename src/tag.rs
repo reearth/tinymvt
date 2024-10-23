@@ -42,6 +42,11 @@ impl TagsEncoder {
     }
 }
 
+pub struct KeysAndValues {
+    pub keys: Vec<String>,
+    pub values: Vec<tile::Value>,
+}
+
 /// Wrapper for MVT values
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Value {

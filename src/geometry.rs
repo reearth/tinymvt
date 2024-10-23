@@ -29,7 +29,50 @@ impl GeometryEncoder {
         self.buf
     }
 
+    /// Adds points.
+    pub fn add_points(&mut self, iterable: impl IntoIterator<Item = [i16; 2]>) {
+        let mut iter = iterable.into_iter();
+        let Some([first_x, first_y]) = iter.next() else {
+            return;
+        };
+        let dx = (first_x - self.prev_x) as i32;
+        let dy = (first_y - self.prev_y) as i32;
+        (self.prev_x, self.prev_y) = (first_x, first_y);
+
+        // move to
+        let moveto_cmd_pos = self.buf.len();
+        self.buf
+            .extend([GEOM_COMMAND_MOVE_TO_WITH_COUNT1, zigzag(dx), zigzag(dy)]);
+
+        let mut count = 1;
+        for [x, y] in iter {
+            let dx = (x - self.prev_x) as i32;
+            let dy = (y - self.prev_y) as i32;
+            (self.prev_x, self.prev_y) = (x, y);
+            if dx != 0 || dy != 0 {
+                self.buf.extend([zigzag(dx), zigzag(dy)]);
+                count += 1;
+            }
+        }
+
+        // set length
+        self.buf[moveto_cmd_pos] = GEOM_COMMAND_MOVE_TO | count << 3;
+    }
+
+    /// Adds a line string.
+    pub fn add_linestring(&mut self, iterable: impl IntoIterator<Item = [i16; 2]>) {
+        self.add_path(iterable, false)
+    }
+
+    /// Adds a polygon ring.
+    ///
+    /// A polygon consists of one exterior ring (clockwise) and optionally one or more interior rings (counter-clockwise).
     pub fn add_ring(&mut self, iterable: impl IntoIterator<Item = [i16; 2]>) {
+        self.add_path(iterable, true)
+    }
+
+    /// Adds a path (line string or polygon ring).
+    fn add_path(&mut self, iterable: impl IntoIterator<Item = [i16; 2]>, close: bool) {
         let mut iter = iterable.into_iter();
         let Some([first_x, first_y]) = iter.next() else {
             return;
@@ -60,8 +103,10 @@ impl GeometryEncoder {
         // set length
         self.buf[lineto_cmd_pos] = GEOM_COMMAND_LINE_TO | count << 3;
 
-        // close path
-        self.buf.push(GEOM_COMMAND_CLOSE_PATH_WITH_COUNT1);
+        if close {
+            // close path
+            self.buf.push(GEOM_COMMAND_CLOSE_PATH_WITH_COUNT1);
+        }
     }
 }
 
