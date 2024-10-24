@@ -25,13 +25,12 @@ fn main() {
                 [extent - 900, 900],
             ]);
 
-            let mut tags = Vec::new();
-            tags.extend(tags_enc.add("foo", 10.into()));
-            tags.extend(tags_enc.add("bar", 20.5.into()));
+            tags_enc.add("foo", 10.into());
+            tags_enc.add("bar", 20.5.into());
 
             Feature {
                 id: Some(1),
-                tags,
+                tags: tags_enc.flush_tags(),
                 r#type: Some(GeomType::Point as i32),
                 geometry: geom_enc.into_vec(),
             }
@@ -53,18 +52,17 @@ fn main() {
                 [extent - 700, 700],
             ]);
 
-            let mut tags = Vec::new();
-            tags.extend(tags_enc.add("uint", Value::Uint(10)));
-            tags.extend(tags_enc.add("sint", Value::SInt(-10)));
-            tags.extend(tags_enc.add("int", Value::Int(10)));
-            tags.extend(tags_enc.add("string", Value::String("string".to_string())));
-            tags.extend(tags_enc.add("float", 10.5f32.into()));
-            tags.extend(tags_enc.add("double", 10.5f64.into()));
-            tags.extend(tags_enc.add("bool", Value::Bool(true)));
+            tags_enc.add("uint", Value::Uint(10));
+            tags_enc.add("sint", Value::SInt(-10));
+            tags_enc.add("int", Value::Int(10));
+            tags_enc.add("string", Value::String("string".to_string()));
+            tags_enc.add("float", 10.5f32.into());
+            tags_enc.add("double", 10.5f64.into());
+            tags_enc.add("bool", Value::Bool(true));
 
             Feature {
                 id: Some(2),
-                tags,
+                tags: tags_enc.flush_tags(),
                 r#type: Some(GeomType::Linestring as i32),
                 geometry: geom_enc.into_vec(),
             }
@@ -81,13 +79,12 @@ fn main() {
             geom_enc.add_ring([[2200, 2200], [2300, 2200], [2300, 2300], [2200, 2300]]);
             geom_enc.add_ring([[2300, 2300], [2400, 2300], [2400, 2400], [2300, 2400]]);
 
-            let mut tags = Vec::new();
-            tags.extend(tags_enc.add("fizz", 10.into()));
-            tags.extend(tags_enc.add("buzz", 20.5.into()));
+            tags_enc.add("fizz", 10.into());
+            tags_enc.add("buzz", 20.5.into());
 
             Feature {
                 id: Some(3),
-                tags,
+                tags: tags_enc.flush_tags(),
                 r#type: Some(GeomType::Polygon as i32),
                 geometry: geom_enc.into_vec(),
             }

@@ -9,6 +9,7 @@ use crate::vector_tile::tile;
 pub struct TagsEncoder {
     keys: IndexSet<String, RandomState>,
     values: IndexSet<Value, RandomState>,
+    tags: Vec<u32>,
 }
 
 /// Utility for encoding MVT tags (attributes).
@@ -18,7 +19,7 @@ impl TagsEncoder {
     }
 
     #[inline]
-    pub fn add(&mut self, key: &str, value: Value) -> [u32; 2] {
+    pub fn add(&mut self, key: &str, value: Value) {
         let key_idx = match self.keys.get_index_of(key) {
             None => self.keys.insert_full(key.to_string()).0,
             Some(idx) => idx,
@@ -27,7 +28,12 @@ impl TagsEncoder {
             None => self.values.insert_full(value).0,
             Some(idx) => idx,
         };
-        [key_idx as u32, value_idx as u32]
+        self.tags.extend([key_idx as u32, value_idx as u32]);
+    }
+
+    #[inline]
+    pub fn flush_tags(&mut self) -> Vec<u32> {
+        std::mem::take(&mut self.tags)
     }
 
     #[inline]
@@ -156,28 +162,36 @@ mod test {
     #[test]
     fn tags_encoder() {
         let mut encoder = TagsEncoder::new();
-        assert_eq!(encoder.add("k0", "v0".into()), [0, 0]);
-        assert_eq!(encoder.add("k0", "v0".into()), [0, 0]);
-        assert_eq!(encoder.add("k1", "v0".into()), [1, 0]);
-        assert_eq!(encoder.add("k1", "v1".into()), [1, 1]);
-        assert_eq!(encoder.add("k0", "v0".into()), [0, 0]);
-        assert_eq!(encoder.add("k0", "v2".into()), [0, 2]);
-        assert_eq!(encoder.add("k1", "v2".into()), [1, 2]);
-        assert_eq!(encoder.add("k2", "v0".to_string().into()), [2, 0]);
-        assert_eq!(encoder.add("k1", "v1".into()), [1, 1]);
-        assert_eq!(encoder.add("k1", "v1".to_string().into()), [1, 1]);
-        assert_eq!(encoder.add("k1", 10i32.into()), [1, 3]);
-        assert_eq!(encoder.add("k2", 10.5f64.into()), [2, 4]);
-        assert_eq!(encoder.add("k3", 10u32.into()), [3, 3]);
-        assert_eq!(encoder.add("k3", (-10i32).into()), [3, 5]);
-        assert_eq!(encoder.add("k3", true.into()), [3, 6]);
-        assert_eq!(encoder.add("k3", 1.into()), [3, 7]);
-        assert_eq!(encoder.add("k2", 10.5f32.into()), [2, 8]);
-        assert_eq!(encoder.add("k4", 10.5f64.into()), [4, 4]);
-        assert_eq!(encoder.add("k3", (-10i64).into()), [3, 5]);
-        assert_eq!(encoder.add("k3", 10u64.into()), [3, 3]);
-        assert_eq!(encoder.add("k5", Value::Int(11)), [5, 9]);
-        assert_eq!(encoder.add("k5", 12i64.into()), [5, 10]);
+        encoder.add("k0", "v0".into());
+        encoder.add("k0", "v0".into());
+        encoder.add("k1", "v0".into());
+        encoder.add("k1", "v1".into());
+        assert_eq!(encoder.flush_tags(), [0, 0, 0, 0, 1, 0, 1, 1]);
+
+        encoder.add("k0", "v0".into());
+        encoder.add("k0", "v2".into());
+        encoder.add("k1", "v2".into());
+        encoder.add("k2", "v0".to_string().into());
+        encoder.add("k1", "v1".into());
+        encoder.add("k1", "v1".to_string().into());
+        assert_eq!(encoder.flush_tags(), [0, 0, 0, 2, 1, 2, 2, 0, 1, 1, 1, 1]);
+
+        encoder.add("k1", 10i32.into());
+        encoder.add("k2", 10.5f64.into());
+        encoder.add("k3", 10u32.into());
+        encoder.add("k3", (-10i32).into());
+        encoder.add("k3", true.into());
+        encoder.add("k3", 1.into());
+        encoder.add("k2", 10.5f32.into());
+        encoder.add("k4", 10.5f64.into());
+        encoder.add("k3", (-10i64).into());
+        encoder.add("k3", 10u64.into());
+        encoder.add("k5", Value::Int(11));
+        encoder.add("k5", 12i64.into());
+        assert_eq!(
+            encoder.flush_tags(),
+            [1, 3, 2, 4, 3, 3, 3, 5, 3, 6, 3, 7, 2, 8, 4, 4, 3, 5, 3, 3, 5, 9, 5, 10]
+        );
 
         let (keys, values) = encoder.into_keys_and_values();
         assert_eq!(keys, vec!["k0", "k1", "k2", "k3", "k4", "k5"]);
