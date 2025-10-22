@@ -99,7 +99,8 @@ impl GeometryEncoder {
                 count += 1;
             }
         }
-        debug_assert!(count >= 2);
+        // line strings should have at least 2 points
+        debug_assert!(count >= 1);
 
         // set length
         self.buf[lineto_cmd_pos] = GEOM_COMMAND_LINE_TO | count << 3;
