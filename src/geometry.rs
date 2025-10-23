@@ -144,4 +144,37 @@ mod tests {
         assert_eq!(zigzag(4096), 8192);
         assert_eq!(zigzag(-4096), 8191);
     }
+
+    #[test]
+    fn test_linestring_with_two_vertices() {
+        // Test that linestrings with exactly 2 vertices work correctly
+        let mut encoder = GeometryEncoder::new();
+        encoder.add_linestring([[0, 0], [10, 10]]);
+        let geometry = encoder.into_vec();
+
+        // Expected: MoveTo(1) + coords(2) + LineTo(1) + coords(2)
+        assert_eq!(geometry.len(), 6);
+        assert_eq!(geometry[0], GEOM_COMMAND_MOVE_TO_WITH_COUNT1); // MoveTo with count=1
+        assert_eq!(geometry[1], zigzag(0)); // dx = 0
+        assert_eq!(geometry[2], zigzag(0)); // dy = 0
+        assert_eq!(geometry[3], GEOM_COMMAND_LINE_TO | (1 << 3)); // LineTo with count=1
+        assert_eq!(geometry[4], zigzag(10)); // dx = 10
+        assert_eq!(geometry[5], zigzag(10)); // dy = 10
+    }
+
+    #[test]
+    fn test_linestring_with_duplicate_points_filtered() {
+        // Test that duplicate consecutive points are filtered out
+        // This simulates what happens at low zoom levels
+        let mut encoder = GeometryEncoder::new();
+        encoder.add_linestring([[0, 0], [0, 0], [0, 0]]);
+        let geometry = encoder.into_vec();
+
+        // Expected: MoveTo(1) + coords(2) + LineTo(1) + coords(2) [zero-length segment]
+        assert_eq!(geometry.len(), 6);
+        assert_eq!(geometry[0], GEOM_COMMAND_MOVE_TO_WITH_COUNT1);
+        assert_eq!(geometry[3], GEOM_COMMAND_LINE_TO | (1 << 3)); // LineTo with count=1
+        assert_eq!(geometry[4], 0); // dx = 0 (repeated point)
+        assert_eq!(geometry[5], 0); // dy = 0 (repeated point)
+    }
 }
