@@ -94,13 +94,17 @@ impl GeometryEncoder {
             let dx = (x - self.prev_x) as i32;
             let dy = (y - self.prev_y) as i32;
             (self.prev_x, self.prev_y) = (x, y);
+            // avoid zero-length segments, in low zoom levels this can happen frequently
             if dx != 0 || dy != 0 {
                 self.buf.extend([zigzag(dx), zigzag(dy)]);
                 count += 1;
             }
         }
-        // line strings should have at least 2 points
-        debug_assert!(count >= 1);
+        // if line string has only one point (due to simplification), repeat it
+        if count == 0 {
+            self.buf.extend([0, 0]);
+            count += 1;
+        }
 
         // set length
         self.buf[lineto_cmd_pos] = GEOM_COMMAND_LINE_TO | count << 3;
