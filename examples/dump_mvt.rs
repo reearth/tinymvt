@@ -71,7 +71,10 @@ fn main() {
                             Ok(linestrings) => {
                                 for ls in linestrings.iter() {
                                     for vertex in ls.iter() {
-                                        println!("feature.linestring.vertex={},{}", vertex[0], vertex[1]);
+                                        println!(
+                                            "feature.linestring.vertex={},{}",
+                                            vertex[0], vertex[1]
+                                        );
                                     }
                                 }
                             }
@@ -84,9 +87,16 @@ fn main() {
                             Ok(polygons) => {
                                 for polygon in polygons.iter() {
                                     for (ring_idx, ring) in polygon.iter().enumerate() {
-                                        let ring_type = if ring_idx == 0 { "exterior" } else { "interior" };
+                                        let ring_type = if ring_idx == 0 {
+                                            "exterior"
+                                        } else {
+                                            "interior"
+                                        };
                                         for vertex in ring.iter() {
-                                            println!("feature.polygon.{}.vertex={},{}", ring_type, vertex[0], vertex[1]);
+                                            println!(
+                                                "feature.polygon.{}.vertex={},{}",
+                                                ring_type, vertex[0], vertex[1]
+                                            );
                                         }
                                     }
                                 }
