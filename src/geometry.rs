@@ -505,8 +505,8 @@ mod tests {
     fn test_decode_polygon_with_holes() {
         // Encode a polygon with holes
         let mut encoder = GeometryEncoder::new();
+        // Holes must be counter-clockwise (reverse order)
         let exterior = [[0, 0], [100, 0], [100, 100], [0, 100]]; // clockwise
-                                                                 // Holes must be counter-clockwise (reverse order)
         let hole1 = [[10, 10], [10, 20], [20, 20], [20, 10]]; // counter-clockwise
         let hole2 = [[30, 30], [30, 40], [40, 40], [40, 30]]; // counter-clockwise
         encoder.add_ring(exterior);

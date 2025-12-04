@@ -193,7 +193,7 @@ impl<'a> TagsDecoder<'a> {
     }
 
     /// Decodes tags into a vector of key-value pairs.
-    pub fn decode(&self, tags: &[u32]) -> Result<Vec<(String, Value)>, String> {
+    pub fn decode(&self, tags: &[u32]) -> Result<Vec<(&'a str, Value)>, String> {
         if !tags.len().is_multiple_of(2) {
             return Err("Tags array must have even length".to_string());
         }
@@ -211,11 +211,11 @@ impl<'a> TagsDecoder<'a> {
                 return Err(format!("Value index {} out of bounds", value_idx));
             }
 
-            let key = self.keys[key_idx].clone();
+            let key = &self.keys[key_idx];
             let value = Value::from_tile_value(&self.values[value_idx])
-                .ok_or_else(|| "Invalid tile value".to_string())?;
+                .ok_or_else(|| format!("Invalid tile value at index {}", value_idx))?;
 
-            result.push((key, value));
+            result.push((key.as_str(), value));
         }
 
         Ok(result)
@@ -329,16 +329,14 @@ mod test {
         let decoded = decoder.decode(&tags).unwrap();
 
         assert_eq!(decoded.len(), 5);
-        assert_eq!(decoded[0].0, "name");
-        assert_eq!(decoded[0].1, Value::String("road".to_string()));
-        assert_eq!(decoded[1].0, "type");
-        assert_eq!(decoded[1].1, Value::String("highway".to_string()));
-        assert_eq!(decoded[2].0, "lanes");
-        assert_eq!(decoded[2].1, Value::Uint(4));
-        assert_eq!(decoded[3].0, "maxspeed");
-        assert_eq!(decoded[3].1, Value::Float(60.5f32.to_ne_bytes()));
-        assert_eq!(decoded[4].0, "oneway");
-        assert_eq!(decoded[4].1, Value::Bool(true));
+        assert_eq!(decoded[0], ("name", Value::String("road".to_string())));
+        assert_eq!(decoded[1], ("type", Value::String("highway".to_string())));
+        assert_eq!(decoded[2], ("lanes", Value::Uint(4)));
+        assert_eq!(
+            decoded[3],
+            ("maxspeed", Value::Float(60.5f32.to_ne_bytes()))
+        );
+        assert_eq!(decoded[4], ("oneway", Value::Bool(true)));
     }
 
     #[test]
@@ -359,22 +357,13 @@ mod test {
         let decoded = decoder.decode(&tags).unwrap();
 
         assert_eq!(decoded.len(), 7);
-        assert_eq!(decoded[0], ("uint".to_string(), Value::Uint(10)));
-        assert_eq!(decoded[1], ("sint".to_string(), Value::SInt(-10)));
-        assert_eq!(decoded[2], ("int".to_string(), Value::Int(10)));
-        assert_eq!(
-            decoded[3],
-            ("string".to_string(), Value::String("test".to_string()))
-        );
-        assert_eq!(
-            decoded[4],
-            ("float".to_string(), Value::Float(10.5f32.to_ne_bytes()))
-        );
-        assert_eq!(
-            decoded[5],
-            ("double".to_string(), Value::Double(20.5f64.to_ne_bytes()))
-        );
-        assert_eq!(decoded[6], ("bool".to_string(), Value::Bool(true)));
+        assert_eq!(decoded[0], ("uint", Value::Uint(10)));
+        assert_eq!(decoded[1], ("sint", Value::SInt(-10)));
+        assert_eq!(decoded[2], ("int", Value::Int(10)));
+        assert_eq!(decoded[3], ("string", Value::String("test".to_string())));
+        assert_eq!(decoded[4], ("float", Value::Float(10.5f32.to_ne_bytes())));
+        assert_eq!(decoded[5], ("double", Value::Double(20.5f64.to_ne_bytes())));
+        assert_eq!(decoded[6], ("bool", Value::Bool(true)));
     }
 
     #[test]
